@@ -1,0 +1,16 @@
+# Integration tests run against a real Postgres (local 'eventhub_test' database by
+# default; CI overrides TEST_DATABASE_URL to point at its Postgres service).
+spring:
+  datasource:
+    url: ${TEST_DATABASE_URL:jdbc:postgresql://localhost:5432/eventhub_test}
+    username: ${TEST_DATABASE_USER:eventhub}
+    password: ${TEST_DATABASE_PASSWORD:eventhub}
+  flyway:
+    clean-disabled: false
+
+# Deterministic, test-only secrets.
+app:
+  jwt:
+    secret: test-secret-key-which-is-long-enough-32+
+    access-token-ttl: PT15M
+    refresh-token-ttl: P30D
