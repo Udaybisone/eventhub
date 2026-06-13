@@ -16,6 +16,11 @@ const STATUS_STYLES = {
   PAST: 'bg-slate-200 text-slate-600',
 }
 
+export const CATEGORY_OPTIONS = Object.entries(CATEGORY_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}))
+
 export function categoryLabel(category) {
   return CATEGORY_LABELS[category] || category
 }

@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getJson } from '../api'
+import { useAuth } from '../auth/AuthContext'
+import BookmarkButton from '../components/BookmarkButton'
 import { categoryLabel, statusStyle, formatDateTime } from '../lib/format'
 
 export default function EventDetails() {
   const { id } = useParams()
+  const { isAuthenticated, api } = useAuth()
   const [event, setEvent] = useState(null)
+  const [savedKnown, setSavedKnown] = useState(false)
+  const [initialSaved, setInitialSaved] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -20,6 +25,26 @@ export default function EventDetails() {
       cancelled = true
     }
   }, [id])
+
+  // Determine whether this event is already bookmarked (for the toggle's initial state).
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSavedKnown(true)
+      return
+    }
+    let cancelled = false
+    api
+      .get('/api/bookmarks?size=100')
+      .then((d) => {
+        if (cancelled) return
+        setInitialSaved(d.content.some((e) => String(e.id) === String(id)))
+        setSavedKnown(true)
+      })
+      .catch(() => !cancelled && setSavedKnown(true))
+    return () => {
+      cancelled = true
+    }
+  }, [id, isAuthenticated, api])
 
   if (loading) return <p className="text-sm text-slate-400">Loading…</p>
   if (error)
@@ -51,7 +76,10 @@ export default function EventDetails() {
           )}
         </div>
 
-        <h1 className="text-2xl font-bold text-slate-900">{event.title}</h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-2xl font-bold text-slate-900">{event.title}</h1>
+          {savedKnown && <BookmarkButton eventId={event.id} initialSaved={initialSaved} />}
+        </div>
 
         <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
           <Field label="Starts" value={formatDateTime(event.startDateTime)} />

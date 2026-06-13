@@ -111,9 +111,10 @@ at another Postgres (CI uses a Postgres service container — see `.github/workf
 
 - **Phase 0** ✅ Scaffold (backend, frontend, DB migrations, CI)
 - **Phase 1** ✅ Ingestion + read-only browse
-- **Phase 2** ✅ Search, filter (backend)
-- **Phase 3** ✅ Auth + bookmarks + notifications (backend)
+- **Phase 2** ✅ Search, filters + monthly calendar (backend + frontend)
+- **Phase 3** ✅ Auth + bookmarks + notifications (backend + frontend auth pages, bookmarks)
 - **Phase 4** ✅ Internal triggers (backend) — GitHub Actions cron YAML still to add
-- **Phase 5** ✅ Admin API (backend)
+- **Phase 5** ✅ Admin API + dashboard (backend + frontend)
 - **Backend test suite** ✅ 21 tests green against real Postgres
-- **Remaining:** frontend for Phases 2–5 (search UI, calendar, auth pages, bookmarks, admin); deploy config (Render/Vercel/Neon); GitHub Actions cron workflows
+- **Frontend** ✅ Browse/search/filter, calendar, login/register/reset, bookmarks, saved, admin
+- **Remaining:** deploy config (Render/Vercel/Neon); GitHub Actions cron workflows; frontend tests
