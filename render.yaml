@@ -1,0 +1,40 @@
+# Render Blueprint for the EventHub backend (free Docker web service).
+# Create it via Render → New → Blueprint, pointing at this repo.
+# Secrets with `sync: false` must be filled in the Render dashboard after creation.
+services:
+  - type: web
+    name: eventhub-backend
+    runtime: docker
+    repo: https://github.com/Udaybisone/eventhub
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: singapore
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      # Cap JVM heap so it fits the 512MB free instance.
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=70.0
+      # Generated once by Render; copy APP_INTERNAL_SECRET into the GitHub secret.
+      - key: APP_JWT_SECRET
+        generateValue: true
+      - key: APP_INTERNAL_SECRET
+        generateValue: true
+      # --- Neon Postgres (fill in dashboard) ---
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_USER
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      # --- set to the Vercel URL after the frontend is deployed ---
+      - key: APP_CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: APP_FRONTEND_BASE_URL
+        sync: false
+      # --- optional ---
+      - key: APP_ADMIN_EMAIL
+        sync: false
+      - key: APP_RESEND_API_KEY
+        sync: false
