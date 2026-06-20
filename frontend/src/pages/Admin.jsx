@@ -1,14 +1,64 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
-import { CATEGORY_OPTIONS, formatDateTime } from '../lib/format'
+import { CATEGORY_OPTIONS, formatDateTime, relativeTime } from '../lib/format'
 
 export default function Admin() {
   return (
     <div className="space-y-10">
-      <h2 className="text-2xl font-bold text-slate-900">Admin dashboard</h2>
+      <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Admin dashboard</h2>
+      <SourceHealth />
       <AdminEvents />
       <IngestionJobs />
     </div>
+  )
+}
+
+function SourceHealth() {
+  const { api } = useAuth()
+  const [jobs, setJobs] = useState([])
+
+  useEffect(() => {
+    api.get('/api/admin/ingestion-jobs?size=50').then((d) => setJobs(d.content)).catch(() => {})
+  }, [api])
+
+  // Jobs arrive newest-first, so the first job seen per source is its latest run.
+  const latest = {}
+  for (const j of jobs) if (!latest[j.source]) latest[j.source] = j
+  const sources = Object.values(latest)
+
+  if (sources.length === 0) return null
+
+  const badge = (status) =>
+    status === 'SUCCESS'
+      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+      : status === 'FAILED'
+        ? 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300'
+        : 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+
+  return (
+    <section>
+      <h3 className="mb-3 font-semibold text-slate-800 dark:text-slate-200">Source health</h3>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {sources.map((j) => (
+          <div key={j.source} className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-slate-800 dark:text-slate-200">{j.source}</span>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badge(j.status)}`}>
+                {j.status === 'SUCCESS' ? 'Active' : j.status === 'FAILED' ? 'Failing' : j.status}
+              </span>
+            </div>
+            <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              Last sync {relativeTime(j.startedAt)} · {j.inserted} new, {j.updated} updated
+            </div>
+            {j.errorMessage && (
+              <div className="mt-1 truncate text-xs text-red-500" title={j.errorMessage}>
+                {j.errorMessage}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -47,14 +97,14 @@ function AdminEvents() {
 
   return (
     <section>
-      <h3 className="mb-3 font-semibold text-slate-800">
+      <h3 className="mb-3 font-semibold text-slate-800 dark:text-slate-200">
         Events <span className="text-sm font-normal text-slate-400">({data.totalElements})</span>
       </h3>
       {error && <p className="mb-2 text-sm text-red-700">{error}</p>}
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 text-xs uppercase text-slate-500">
+          <thead className="border-b border-slate-200 text-xs uppercase text-slate-500 dark:border-slate-800 dark:text-slate-400">
             <tr>
               <th className="px-3 py-2">Title</th>
               <th className="px-3 py-2">Category</th>
@@ -65,7 +115,7 @@ function AdminEvents() {
           </thead>
           <tbody>
             {data.content.map((e) => (
-              <tr key={e.id} className="border-b border-slate-100 last:border-0">
+              <tr key={e.id} className="border-b border-slate-100 last:border-0 dark:border-slate-800">
                 {editing?.id === e.id ? (
                   <>
                     <td className="px-3 py-2">
@@ -164,11 +214,11 @@ function IngestionJobs() {
 
   return (
     <section>
-      <h3 className="mb-3 font-semibold text-slate-800">Ingestion jobs</h3>
+      <h3 className="mb-3 font-semibold text-slate-800 dark:text-slate-200">Ingestion jobs</h3>
       {error && <p className="mb-2 text-sm text-red-700">{error}</p>}
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 text-xs uppercase text-slate-500">
+          <thead className="border-b border-slate-200 text-xs uppercase text-slate-500 dark:border-slate-800 dark:text-slate-400">
             <tr>
               <th className="px-3 py-2">Source</th>
               <th className="px-3 py-2">Status</th>
@@ -182,7 +232,7 @@ function IngestionJobs() {
           </thead>
           <tbody>
             {jobs.map((j) => (
-              <tr key={j.id} className="border-b border-slate-100 last:border-0">
+              <tr key={j.id} className="border-b border-slate-100 last:border-0 dark:border-slate-800">
                 <td className="px-3 py-2 font-medium text-slate-800">{j.source}</td>
                 <td className={`px-3 py-2 font-medium ${statusColor(j.status)}`}>{j.status}</td>
                 <td className="px-3 py-2 text-slate-500">{formatDateTime(j.startedAt)}</td>
