@@ -107,6 +107,22 @@ at another Postgres (CI uses a Postgres service container — see `.github/workf
 `APP_RESEND_API_KEY` (optional — logs emails if unset), `APP_EMAIL_FROM`,
 `APP_INTERNAL_SECRET` (guards `/internal/*`), `APP_ADMIN_EMAIL` (promotes that user to admin).
 
+## Scheduled jobs (GitHub Actions)
+
+Ingestion and reminders are driven by external cron, not an in-app scheduler
+(the free host sleeps and would never fire timers). Two workflows in
+`.github/workflows/` call the secured `/internal` endpoints:
+
+- `ingest.yml` — every 30 min → `POST /internal/ingest`
+- `notify.yml` — every 15 min → `POST /internal/notify`
+
+Both first ping `/healthz` to wake the host, then retry on cold start, and can
+be run on demand via **Actions → Run workflow**. They require two repo secrets
+(Settings → Secrets → Actions), set once the backend is deployed:
+
+- `API_BASE_URL` — deployed backend URL (e.g. `https://eventhub.onrender.com`)
+- `INTERNAL_SECRET` — must equal the backend's `APP_INTERNAL_SECRET`
+
 ## Roadmap
 
 - **Phase 0** ✅ Scaffold (backend, frontend, DB migrations, CI)

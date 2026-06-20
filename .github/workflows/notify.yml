@@ -1,0 +1,23 @@
+name: Send reminders
+
+# Dispatches due event reminders (24h and 1h before) via the secured endpoint.
+# Runs more frequently than ingestion so the 1-hour window isn't missed.
+on:
+  schedule:
+    - cron: "*/15 * * * *" # every 15 minutes
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake the backend (Render free tier may be asleep)
+        run: |
+          curl -fsS --retry 5 --retry-all-errors --retry-delay 15 --max-time 120 \
+            "${{ secrets.API_BASE_URL }}/healthz" || true
+
+      - name: Dispatch reminders
+        run: |
+          curl -fsS --retry 3 --retry-all-errors --retry-delay 15 --max-time 120 \
+            -X POST "${{ secrets.API_BASE_URL }}/internal/notify" \
+            -H "X-Internal-Secret: ${{ secrets.INTERNAL_SECRET }}"
