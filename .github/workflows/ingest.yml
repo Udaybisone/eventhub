@@ -3,6 +3,9 @@ name: Ingest events
 # Refreshes the event feed by calling the secured ingestion endpoint.
 # Runs on a schedule (external cron, since the free host sleeps and can't run
 # in-app timers) and can also be triggered manually from the Actions tab.
+#
+# No-ops (and stays green) until the backend is deployed and these repo secrets
+# are set: API_BASE_URL, INTERNAL_SECRET. This avoids failure-email spam pre-deploy.
 on:
   schedule:
     - cron: "*/30 * * * *" # every 30 minutes
@@ -11,14 +14,29 @@ on:
 jobs:
   ingest:
     runs-on: ubuntu-latest
+    env:
+      API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      INTERNAL_SECRET: ${{ secrets.INTERNAL_SECRET }}
     steps:
+      - name: Check configuration
+        id: cfg
+        run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "API_BASE_URL not set — backend not deployed yet. Skipping."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Wake the backend (Render free tier may be asleep)
+        if: steps.cfg.outputs.ready == 'true'
         run: |
           curl -fsS --retry 5 --retry-all-errors --retry-delay 15 --max-time 120 \
-            "${{ secrets.API_BASE_URL }}/healthz" || true
+            "$API_BASE_URL/healthz" || true
 
       - name: Trigger ingestion
+        if: steps.cfg.outputs.ready == 'true'
         run: |
           curl -fsS --retry 3 --retry-all-errors --retry-delay 15 --max-time 180 \
-            -X POST "${{ secrets.API_BASE_URL }}/internal/ingest" \
-            -H "X-Internal-Secret: ${{ secrets.INTERNAL_SECRET }}"
+            -X POST "$API_BASE_URL/internal/ingest" \
+            -H "X-Internal-Secret: $INTERNAL_SECRET"
